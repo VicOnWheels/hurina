@@ -14,7 +14,7 @@ creds_dict["private_key"] = base64.b64decode(creds_dict["private_key"]).decode()
 
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
-sheet = client.open("Saisie Urinaire").sheet1
+sheet = client.open("hurina_db").sheet1
 
 
 # Interface Streamlit
