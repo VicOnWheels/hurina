@@ -26,7 +26,7 @@ method = st.selectbox("Méthode utilisée", ["Sonde", "Naturel"])
 comment = st.text_area("Commentaire (optionnel)", "")
 if st.button("💾 Enregistrer"):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([now, volume, method])
+    sheet.append_row([now, volume, method,comment])
     st.success("Un pas de plus vers la victoire ✅")
 
 # Historique
