@@ -16,9 +16,24 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 sheet = client.open("hurina_db").sheet1
 
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #fff0f5; /* Rose clair */
+    }
+    .stApp {
+        background: linear-gradient(160deg, #fff0f5 0%, #ffe4e1 100%);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # 🎨 Titre
 st.markdown("## 💧 Hurina - Suivi urinaire quotidien")
-st.markdown("Bienvenue ! Saisis tes données pour suivre ton évolution et rester en forme 💪")
+st.markdown("Bienvenue ! Saisis tes données pour suivre ton évolution 💪")
 
 st.markdown("---")
 
@@ -34,7 +49,7 @@ comment = st.text_area("📝 Commentaire (optionnel)", "")
 if st.button("💾 Enregistrer"):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sheet.append_row([now, volume, method, comment])
-    st.success("✅ Donnée enregistrée avec succès ! Continue comme ça 🚀")
+    st.success("✅ Donnée enregistrée avec succès ! Un pas de plus vers le succès 🚀")
 
 st.markdown("---")
 
