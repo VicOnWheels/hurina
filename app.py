@@ -23,11 +23,11 @@ st.markdown(
 
     html, body, [class*="css"] {
         font-family: 'Playfair Display', serif;
-        background-color: #fdecef;
+        background-color: #FEF5EF;
     }
 
     .stApp {
-        background-color: #fdecef;
+        background-color: #FEF5EF;
     }
     </style>
     """,
