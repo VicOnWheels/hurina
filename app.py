@@ -30,7 +30,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.image("hurina_logo.png", width=200)
 st.title("Bienvenue sur Hurina")
 
 
