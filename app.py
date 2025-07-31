@@ -35,8 +35,6 @@ st.markdown(
 )
 
 st.image("hurina_logo.png", width=200)
-st.title("Bienvenue sur Hurina")
-
 
 # 🎨 Titre
 st.markdown("## 💧 Hurina - Suivi urinaire quotidien")
