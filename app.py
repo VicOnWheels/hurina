@@ -34,21 +34,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: #fdecef;
-    }
-    .stApp {
-        background-color: #fdecef;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 st.image("hurina_logo.png", width=200)
 st.title("Bienvenue sur Hurina")
 
