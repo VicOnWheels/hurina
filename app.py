@@ -18,14 +18,16 @@ sheet = client.open("hurina_db").sheet1
 
 
 # Interface Streamlit
-st.title("💧 Suivi du volume urinaire")
+st.title("Bienvenue sur Hurina")
+st.write("Cette application te permet de suivre ton volume urinaire quotidien.")
 
 volume = st.number_input("Volume urinaire (en mL)", min_value=0, step=10)
-method = st.selectbox("Méthode utilisée", ["Bassin", "Sonde", "Urinal", "Autre"])
+method = st.selectbox("Méthode utilisée", ["Sonde", "Naturel"])
+comment = st.text_area("Commentaire (optionnel)", "")
 if st.button("💾 Enregistrer"):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sheet.append_row([now, volume, method])
-    st.success("Donnée enregistrée ✅")
+    st.success("Un pas de plus vers la victoire ✅")
 
 # Historique
 if st.checkbox("📊 Voir l'historique"):
