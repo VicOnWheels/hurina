@@ -20,15 +20,18 @@ st.markdown(
     """
     <style>
     body {
-        background-color: #fff0f5; /* Rose clair */
+        background-color: #fdecef;
     }
     .stApp {
-        background: linear-gradient(160deg, #fff0f5 0%, #ffe4e1 100%);
+        background-color: #fdecef;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+
+st.image("hurina_logo.png", width=200)
+st.title("Bienvenue sur Hurina")
 
 
 # 🎨 Titre
