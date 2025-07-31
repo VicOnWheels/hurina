@@ -19,6 +19,25 @@ sheet = client.open("hurina_db").sheet1
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Playfair Display', serif;
+        background-color: #fdecef;
+    }
+
+    .stApp {
+        background-color: #fdecef;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+st.markdown(
+    """
+    <style>
     body {
         background-color: #fdecef;
     }
@@ -30,6 +49,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.image("hurina_logo.png", width=200)
 st.title("Bienvenue sur Hurina")
 
 
