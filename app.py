@@ -1,8 +1,7 @@
 import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 import json
 import base64
 import pandas as pd
@@ -47,15 +46,23 @@ st.markdown("---")
 # 🧾 Formulaire
 col1, col2, col3 = st.columns(3)
 
-now_local = datetime.now() + timedelta(hours=2)  # Ajustement pour l'heure locale (UTC+2)
+# Heure locale par défaut (arrondie à l’heure en cours)
+now_local = (datetime.now() + timedelta(hours=2)).replace(minute=0, second=0, microsecond=0)
+
+# Liste de créneaux horaires par pas de 30 min
+from datetime import time
+time_options = [time(h, m) for h in range(24) for m in (0, 30)]
+default_time = now_local.time()
+default_index = time_options.index(default_time) if default_time in time_options else 0
 
 with col1:
     date_collected = st.date_input("📅 Date de la collecte", value=now_local.date())
-    time_collected = st.time_input("🕒 Heure de la collecte", value=now_local.time())
+    time_collected = st.selectbox("🕒 Heure de la collecte", time_options, index=default_index)
     datetime_collected = datetime.combine(date_collected, time_collected)
 
 with col2:
     volume = st.number_input("💦 Volume urinaire (en mL)", min_value=0, step=10)
+
 with col3:
     method = st.selectbox("⚙️ Méthode utilisée", ["Sonde", "Naturel"])
 
@@ -73,6 +80,7 @@ if st.button("💾 Enregistrer"):
     st.success("✅ Donnée enregistrée avec succès ! Un pas de plus vers le succès 🚀")
 
 st.markdown("---")
+
 
 # 📊 Historique et graphique
 if st.checkbox("📈 Afficher l'historique des enregistrements"):
