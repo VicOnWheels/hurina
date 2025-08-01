@@ -46,7 +46,10 @@ st.markdown("---")
 # 🧾 Formulaire
 col1, col2, col3 = st.columns(3)
 with col1:
-    datetime_collected = st.datetime_input("Date et heure de la collecte", value=datetime.now())
+    date_collected = st.date_input("📅 Date de la collecte", value=datetime.today())
+    time_collected = st.time_input("🕒 Heure de la collecte", value=datetime.now().time())
+    datetime_collected = datetime.combine(date_collected, time_collected)
+
 with col2:
     volume = st.number_input("💦 Volume urinaire (en mL)", min_value=0, step=10)
 with col3:
