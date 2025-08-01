@@ -118,11 +118,12 @@ if st.checkbox("🗑️ Supprimer un enregistrement"):
 
         confirm = st.checkbox("✅ Je confirme vouloir supprimer cet enregistrement")
 
-        if st.button("Supprimer cet enregistrement ❌"):
-            if confirm:
-                sheet.delete_rows(selected_index + 2)  # +2 : 1 pour le header, 1 car index 0-based
-                st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
-            else:
-                st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
+    if st.button("Supprimer cet enregistrement ❌"):
+        if confirm:
+            sheet.delete_rows(int(selected_index) + 2)  # 👈 conversion sécurisée en int natif
+            st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
+        else:
+            st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
+
     else:
         st.info("Aucun enregistrement à supprimer.")
