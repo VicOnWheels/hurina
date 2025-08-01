@@ -98,8 +98,8 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
         st.markdown("### 🗑️ Supprimer un enregistrement")
 
         df["__label"] = df.apply(
-            lambda row: f"{row['Horodatage']} - {row['Saisie temps']} – {row['Volume urinaire (en mL)']} mL – {row['Méthode utilisée']}",
-            axis=1
+            lambda row: f"{row['Saisie temps']} – {row['Volume urinaire (en mL)']} mL – {row['Méthode utilisée']}",
+            axis=1``
         )
         selected_label = st.selectbox("Choisissez un enregistrement à supprimer :", df["__label"].tolist())
         selected_index = df[df["__label"] == selected_label].index[0]
