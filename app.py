@@ -16,6 +16,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 sheet = client.open("hurina_db").sheet1
 
+# 🎨 Style
 st.markdown(
     """
     <style>
@@ -34,26 +35,34 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# 🖼️ Logo
 st.image("hurina_logo.png", width=200)
 
-# 🎨 Titre
+# 🎯 Titre
 st.markdown("## 💧 Hurina - Suivi urinaire quotidien")
 st.markdown("Bienvenue ! Saisis tes données pour suivre ton évolution 💪")
-
 st.markdown("---")
 
 # 🧾 Formulaire
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
-    volume = st.number_input("💦 Volume urinaire (en mL)", min_value=0, step=10)
+    datetime_collected = st.datetime_input("Date et heure de la collecte", value=datetime.now())
 with col2:
+    volume = st.number_input("💦 Volume urinaire (en mL)", min_value=0, step=10)
+with col3:
     method = st.selectbox("⚙️ Méthode utilisée", ["Sonde", "Naturel"])
 
 comment = st.text_area("📝 Commentaire (optionnel)", "")
 
 if st.button("💾 Enregistrer"):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([now, volume, method, comment])
+    sheet.append_row([
+        now,
+        datetime_collected.strftime("%Y-%m-%d %H:%M:%S"),
+        volume,
+        method,
+        comment
+    ])
     st.success("✅ Donnée enregistrée avec succès ! Un pas de plus vers le succès 🚀")
 
 st.markdown("---")
@@ -63,20 +72,42 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
     records = sheet.get_all_records()
     df = pd.DataFrame(records)
 
-    # Transformation des données pour le graphique
-    df["Horodatage"] = pd.to_datetime(df["Horodatage"])
-    df = df.sort_values("Horodatage")
+    if not df.empty:
+        # Conversion date
+        df["Horodatage"] = pd.to_datetime(df["Horodatage"])
+        df = df.sort_values("Horodatage")
 
-    st.dataframe(df, use_container_width=True)
+        st.dataframe(df, use_container_width=True)
 
-    # Graphique Altair
-    chart = alt.Chart(df).mark_line(point=True).encode(
-        x=alt.X("Horodatage:T", title="Date"),
-        y=alt.Y("Volume urinaire (en mL):Q", title="Volume (mL)"),
-        tooltip=["Horodatage:T", "Volume urinaire (en mL):Q", "Méthode utilisée", "Commentaire (optionnel)"]
-    ).properties(
-        title="📊 Évolution du volume urinaire",
-        width="container"
-    ).interactive()
+        # 📈 Graphique
+        chart = alt.Chart(df).mark_line(point=True).encode(
+            x=alt.X("Horodatage:T", title="Date"),
+            y=alt.Y("Volume urinaire (en mL):Q", title="Volume (mL)"),
+            tooltip=["Horodatage:T", "Volume urinaire (en mL):Q", "Méthode utilisée", "Commentaire (optionnel)"]
+        ).properties(
+            title="📊 Évolution du volume urinaire",
+            width="container"
+        ).interactive()
 
-    st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
+
+        # 🗑️ Suppression d'une ligne
+        st.markdown("### 🗑️ Supprimer un enregistrement")
+
+        df["__label"] = df.apply(
+            lambda row: f"{row['Horodatage']} – {row['Volume urinaire (en mL)']} mL – {row['Méthode utilisée']}",
+            axis=1
+        )
+        selected_label = st.selectbox("Choisissez un enregistrement à supprimer :", df["__label"].tolist())
+        selected_index = df[df["__label"] == selected_label].index[0]
+
+        confirm = st.checkbox("✅ Je confirme vouloir supprimer cet enregistrement")
+
+        if st.button("Supprimer cet enregistrement ❌"):
+            if confirm:
+                sheet.delete_rows(selected_index + 2)  # +2 car header + indexation 1-based
+                st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
+            else:
+                st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
+    else:
+        st.info("Aucun enregistrement à afficher ou supprimer.")
