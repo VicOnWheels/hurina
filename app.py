@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import base64
 import pandas as pd
@@ -45,9 +46,12 @@ st.markdown("---")
 
 # 🧾 Formulaire
 col1, col2, col3 = st.columns(3)
+
+now_local = datetime.now() + timedelta(hours=2)  # Ajustement pour l'heure locale (UTC+2)
+
 with col1:
-    date_collected = st.date_input("📅 Date de la collecte", value=datetime.today())
-    time_collected = st.time_input("🕒 Heure de la collecte", value=datetime.now().time())
+    date_collected = st.date_input("📅 Date de la collecte", value=now_local.date())
+    time_collected = st.time_input("🕒 Heure de la collecte", value=now_local.time())
     datetime_collected = datetime.combine(date_collected, time_collected)
 
 with col2:
@@ -93,24 +97,26 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
         ).interactive()
 
         st.altair_chart(chart, use_container_width=True)
-
-        # 🗑️ Suppression d'une ligne
-        st.markdown("### 🗑️ Supprimer un enregistrement")
-
-        df["__label"] = df.apply(
-            lambda row: f"{row['Saisie temps']} – {row['Volume urinaire (en mL)']} mL – {row['Méthode utilisée']}",
-            axis=1
-        )
-        selected_label = st.selectbox("Choisissez un enregistrement à supprimer :", df["__label"].tolist())
-        selected_index = df[df["__label"] == selected_label].index[0]
-
-        confirm = st.checkbox("✅ Je confirme vouloir supprimer cet enregistrement")
-
-        if st.button("Supprimer cet enregistrement ❌"):
-            if confirm:
-                sheet.delete_rows(selected_index + 2)  # +2 car header + indexation 1-based
-                st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
-            else:
-                st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
     else:
         st.info("Aucun enregistrement à afficher ou supprimer.")
+
+# 🗑️ Suppression d'une ligne
+if st.checkbox("🗑️ Supprimer un enregistrement"):
+    records = sheet.get_all_records()
+    st.markdown("### 🗑️ Supprimer un enregistrement")
+
+    df["__label"] = df.apply(
+        lambda row: f"{row['Saisie temps']} – {row['Volume urinaire (en mL)']} mL – {row['Méthode utilisée']}",
+        axis=1
+    )
+    selected_label = st.selectbox("Choisissez un enregistrement à supprimer :", df["__label"].tolist())
+    selected_index = df[df["__label"] == selected_label].index[0]
+
+    confirm = st.checkbox("✅ Je confirme vouloir supprimer cet enregistrement")
+
+    if st.button("Supprimer cet enregistrement ❌"):
+        if confirm:
+            sheet.delete_rows(selected_index + 2)  # +2 car header + indexation 1-based
+            st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
+        else:
+            st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
