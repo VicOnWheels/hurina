@@ -124,6 +124,3 @@ if st.checkbox("🗑️ Supprimer un enregistrement"):
             st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
         else:
             st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
-
-    else:
-        st.info("Aucun enregistrement à supprimer.")
