@@ -46,13 +46,16 @@ st.markdown("---")
 # 🧾 Formulaire
 col1, col2, col3 = st.columns(3)
 
-# Heure locale par défaut (arrondie à l’heure en cours)
+from datetime import time
+
+# Heure locale à l'instant, arrondie à l'heure pleine
 now_local = (datetime.now() + timedelta(hours=2)).replace(minute=0, second=0, microsecond=0)
 
-# Liste de créneaux horaires par pas de 30 min
-from datetime import time
+# Créneaux 30 min : 00:00, 00:30, ..., 23:30
 time_options = [time(h, m) for h in range(24) for m in (0, 30)]
-default_time = now_local.time()
+
+# Trouver l'index correspondant à l'heure actuelle
+default_time = now_local.time().replace(second=0, microsecond=0)
 default_index = time_options.index(default_time) if default_time in time_options else 0
 
 with col1:
@@ -80,6 +83,7 @@ if st.button("💾 Enregistrer"):
     st.success("✅ Donnée enregistrée avec succès ! Un pas de plus vers le succès 🚀")
 
 st.markdown("---")
+
 
 
 # 📊 Historique et graphique
