@@ -92,25 +92,32 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
     df = pd.DataFrame(records)
 
     if not df.empty:
-        # Conversion date
+        # 🕒 Conversion de l'horodatage
         df["Horodatage"] = pd.to_datetime(df["Horodatage"])
         df = df.sort_values("Horodatage")
 
-        st.dataframe(df, use_container_width=True)
+        # 📅 Ajout d'une colonne semaine ISO (année + semaine)
+        df["Semaine"] = df["Horodatage"].dt.strftime("%G-W%V")
 
-        # 📈 Graphique
-        chart = alt.Chart(df).mark_line(point=True).encode(
-            x=alt.X("Horodatage:T", title="Date"),
-            y=alt.Y("Volume urinaire (en mL):Q", title="Volume (mL)"),
-            tooltip=["Horodatage:T", "Volume urinaire (en mL):Q", "Méthode utilisée", "Commentaire (optionnel)"]
+        # 📊 Graphique : bar chart empilé Sonde vs Naturel par semaine
+        chart_data = df.groupby(["Semaine", "Méthode utilisée"])["Volume urinaire (en mL)"].sum().reset_index()
+
+        chart = alt.Chart(chart_data).mark_bar().encode(
+            x=alt.X("Semaine:O", title="Semaine"),
+            y=alt.Y("Volume urinaire (en mL):Q", title="Volume total (mL)"),
+            color=alt.Color("Méthode utilisée:N", title="Méthode"),
+            tooltip=["Semaine", "Méthode utilisée", "Volume urinaire (en mL)"]
         ).properties(
-            title="📊 Évolution du volume urinaire",
+            title="📊 Volume urinaire hebdomadaire par méthode",
             width="container"
-        ).interactive()
+        )
 
+        st.dataframe(df, use_container_width=True)
         st.altair_chart(chart, use_container_width=True)
+
     else:
         st.info("Aucun enregistrement à afficher ou supprimer.")
+
 
 # 🗑️ Suppression d'une ligne
 if st.checkbox("🗑️ Supprimer un enregistrement"):
