@@ -97,18 +97,18 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
         df = df.sort_values("Horodatage")
 
         # 📅 Ajout d'une colonne semaine ISO (année + semaine)
-        df["Semaine"] = df["Horodatage"].dt.strftime("%G-W%V")
+        df["Jour"] = df["Horodatage"].dt.strftime("%m-%j") # Format mois-jour
 
-        # 📊 Graphique : bar chart empilé Sonde vs Naturel par semaine
-        chart_data = df.groupby(["Semaine", "Méthode utilisée"])["Volume urinaire (en mL)"].sum().reset_index()
+        # 📊 Graphique : bar chart empilé Sonde vs Naturel par Jour
+        chart_data = df.groupby(["Jour", "Méthode utilisée"])["Volume urinaire (en mL)"].sum().reset_index()
 
         chart = alt.Chart(chart_data).mark_bar().encode(
-            x=alt.X("Semaine:O", title="Semaine"),
+            x=alt.X("Jour:O", title="Jour"),
             y=alt.Y("Volume urinaire (en mL):Q", title="Volume total (mL)"),
             color=alt.Color("Méthode utilisée:N", title="Méthode"),
-            tooltip=["Semaine", "Méthode utilisée", "Volume urinaire (en mL)"]
+            tooltip=["Jour", "Méthode utilisée", "Volume urinaire (en mL)"]
         ).properties(
-            title="📊 Volume urinaire hebdomadaire par méthode",
+            title="📊 Volume urinaire journalier par méthode",
             width="container"
         )
 
