@@ -97,7 +97,7 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
         df = df.sort_values("Horodatage")
 
         # 📅 Ajout d'une colonne semaine ISO (année + semaine)
-        df["Jour"] = df["Horodatage"].dt.strftime("%m-%j") # Format mois-jour
+        df["Jour"] = df["Horodatage"].dt.strftime("%d/%m") # Format mois-jour
 
         # 📊 Graphique : bar chart empilé Sonde vs Naturel par Jour
         chart_data = df.groupby(["Jour", "Méthode utilisée"])["Volume urinaire (en mL)"].sum().reset_index()
