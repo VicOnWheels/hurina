@@ -93,11 +93,11 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
 
     if not df.empty:
         # 🕒 Conversion de l'horodatage
-        df["Horodatage"] = pd.to_datetime(df["Horodatage"])
-        df = df.sort_values("Horodatage")
+        df["Saisie temps"] = pd.to_datetime(df["Saisie temps"])
+        df = df.sort_values("Saisie temps")
 
         # 📅 Ajout d'une colonne semaine ISO (année + semaine)
-        df["Jour"] = df["Horodatage"].dt.strftime("%d/%m") # Format mois-jour
+        df["Jour"] = df["Saisie temps"].dt.strftime("%d/%m") # Format mois-jour
 
         # 📊 Graphique : bar chart empilé Sonde vs Naturel par Jour
         chart_data = df.groupby(["Jour", "Méthode utilisée"])["Volume urinaire (en mL)"].sum().reset_index()
