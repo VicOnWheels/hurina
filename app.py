@@ -86,79 +86,120 @@ st.markdown("---")
 
 
 
-# 📊 Historique et graphique
-if st.checkbox("📈 Afficher l'historique des enregistrements"):
-    records = sheet.get_all_records()
+# 📊 Historique + Graphique (avec cache & toggle)
+
+@st.cache_data(ttl=30)
+def load_df_from_sheet(_sheet):
+    """Charge les données et gère la conversion datetime de 'Saisie temps'."""
+    records = _sheet.get_all_records()  # ⚠️ 1 seul appel grâce au cache
     df = pd.DataFrame(records)
+    if df.empty:
+        return df
 
-# --- Choix de granularité ---
-weekly = st.toggle("Regrouper par semaine", value=False)
+    COL_TIME = "Saisie temps"
+    COL_VOL = "Volume urinaire (en mL)"
+    COL_METH = "Méthode utilisée"
 
-if weekly:
-    # Semaine ISO démarrant le lundi
-    df2 = df.assign(
-        JourDate=df["Saisie temps"].dt.normalize(),
-        Semaine=df["Saisie temps"].dt.to_period("W-MON").apply(lambda p: p.start_time)  # début de semaine (lundi)
-    )
-    chart_data = (
-        df2.groupby(["Semaine", "Méthode utilisée"], as_index=False)["Volume urinaire (en mL)"]
-           .sum()
-           .sort_values("Semaine")
-    )
+    # Vérifs colonnes minimales
+    for c in [COL_TIME, COL_VOL, COL_METH]:
+        if c not in df.columns:
+            st.error(f"Colonne manquante dans Google Sheet : '{c}'")
+            return pd.DataFrame()
 
-    x_field = alt.X(
-        "Semaine:T",
-        title="Semaine (début)",
-        axis=alt.Axis(format="%d/%m"),   # affichage "Semaine du 01/07"
-        sort="ascending"
-    )
-    tooltip = [
-        alt.Tooltip("Semaine:T", title="Semaine du", format="%d/%m/%Y"),
-        alt.Tooltip("Méthode utilisée:N", title="Méthode"),
-        alt.Tooltip("Volume urinaire (en mL):Q", title="Volume (mL)"),
-    ]
-    chart_title = "📊 Volume urinaire hebdomadaire par méthode"
+    # Conversion robuste -> datetime
+    s = df[COL_TIME].astype(str).str.strip()
 
-else:
-    # Agrégation journalière
-    df2 = df.assign(JourDate=df["Saisie temps"].dt.normalize())
-    chart_data = (
-        df2.groupby(["JourDate", "Méthode utilisée"], as_index=False)["Volume urinaire (en mL)"]
-           .sum()
-           .sort_values("JourDate")
-    )
+    # a) format ISO (celui que tu écris dans append_row)
+    dt = pd.to_datetime(s, format="%Y-%m-%d %H:%M:%S", errors="coerce")
 
-    x_field = alt.X(
-        "JourDate:T",
-        title="Jour",
-        axis=alt.Axis(format="%d/%m"),
-        sort="ascending"
-    )
-    tooltip = [
-        alt.Tooltip("JourDate:T", title="Jour", format="%d/%m/%Y"),
-        alt.Tooltip("Méthode utilisée:N", title="Méthode"),
-        alt.Tooltip("Volume urinaire (en mL):Q", title="Volume (mL)"),
-    ]
-    chart_title = "📊 Volume urinaire journalier par méthode"
+    # b) fallback FR
+    mask = dt.isna()
+    if mask.any():
+        dt.loc[mask] = pd.to_datetime(s[mask], format="%d/%m/%Y %H:%M:%S", errors="coerce")
 
-# --- Graphique ---
-chart = (
-    alt.Chart(chart_data)
-    .mark_bar()
-    .encode(
-        x=x_field,
-        y=alt.Y("Volume urinaire (en mL):Q", title="Volume total (mL)"),
-        color=alt.Color("Méthode utilisée:N", title="Méthode"),
-        tooltip=tooltip,
-    )
-    .properties(title=chart_title, width="container")
-)
+    # c) dernier filet (mixte)
+    mask = dt.isna()
+    if mask.any():
+        dt.loc[mask] = pd.to_datetime(s[mask], errors="coerce", dayfirst=True)
 
-st.altair_chart(chart, use_container_width=True)
+    df[COL_TIME] = dt
+    df = df.dropna(subset=[COL_TIME]).copy()
 
-st.altair_chart(chart, use_container_width=True)
+    # Tri et colonnes utiles
+    df = df.sort_values(COL_TIME)
+    return df
 
+# ---------- UI ----------
+if st.checkbox("📈 Afficher l'historique des enregistrements"):
+    df = load_df_from_sheet(sheet)
 
+    if df.empty:
+        st.info("Aucune donnée exploitable pour l’historique.")
+    else:
+        st.dataframe(df, use_container_width=True)
+
+        weekly = st.toggle("Regrouper par semaine", value=False)
+
+        COL_TIME = "Saisie temps"
+        COL_VOL = "Volume urinaire (en mL)"
+        COL_METH = "Méthode utilisée"
+
+        if weekly:
+            # début de semaine (lundi)
+            df2 = df.assign(
+                Semaine=df[COL_TIME].dt.to_period("W-MON").apply(lambda p: p.start_time)
+            )
+            chart_data = (
+                df2.groupby(["Semaine", COL_METH], as_index=False)[COL_VOL]
+                   .sum()
+                   .sort_values("Semaine")
+            )
+            x_field = alt.X(
+                "Semaine:T",
+                title="Semaine (début)",
+                axis=alt.Axis(format="%d/%m"),
+                sort="ascending",
+            )
+            tooltip = [
+                alt.Tooltip("Semaine:T", title="Semaine du", format="%d/%m/%Y"),
+                alt.Tooltip(f"{COL_METH}:N", title="Méthode"),
+                alt.Tooltip(f"{COL_VOL}:Q", title="Volume (mL)"),
+            ]
+            chart_title = "📊 Volume urinaire hebdomadaire par méthode"
+        else:
+            # journalier (date à minuit pour agréger sur le jour)
+            df2 = df.assign(JourDate=df[COL_TIME].dt.normalize())
+            chart_data = (
+                df2.groupby(["JourDate", COL_METH], as_index=False)[COL_VOL]
+                   .sum()
+                   .sort_values("JourDate")
+            )
+            x_field = alt.X(
+                "JourDate:T",
+                title="Jour",
+                axis=alt.Axis(format="%d/%m"),
+                sort="ascending",
+            )
+            tooltip = [
+                alt.Tooltip("JourDate:T", title="Jour", format="%d/%m/%Y"),
+                alt.Tooltip(f"{COL_METH}:N", title="Méthode"),
+                alt.Tooltip(f"{COL_VOL}:Q", title="Volume (mL)"),
+            ]
+            chart_title = "📊 Volume urinaire journalier par méthode"
+
+        chart = (
+            alt.Chart(chart_data)
+            .mark_bar()
+            .encode(
+                x=x_field,
+                y=alt.Y(f"{COL_VOL}:Q", title="Volume total (mL)"),
+                color=alt.Color(f"{COL_METH}:N", title="Méthode"),
+                tooltip=tooltip,
+            )
+            .properties(title=chart_title, width="container")
+        )
+
+        st.altair_chart(chart, use_container_width=True)
 
 # 🗑️ Suppression d'une ligne
 if st.checkbox("🗑️ Supprimer un enregistrement"):
