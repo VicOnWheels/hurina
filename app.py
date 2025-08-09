@@ -92,31 +92,40 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
     df = pd.DataFrame(records)
 
     if not df.empty:
-        # 🕒 Conversion de l'horodatage
-        df["Saisie temps"] = pd.to_datetime(df["Saisie temps"])
-        df = df.sort_values("Saisie temps")
+        # Regrouper par date "pure" (sans heure) + méthode
+        df["Saisie temps"] = pd.to_datetime(df["Saisie temps"], errors="coerce")
+        df = df.dropna(subset=["Saisie temps"])
 
-        # 📅 Ajout d'une colonne semaine ISO (année + semaine)
-        df["Jour"] = df["Saisie temps"].dt.strftime("%d/%m") # Format mois-jour
+chart_data = (
+    df.assign(JourDate=df["Saisie temps"].dt.normalize())  # datetime à minuit
+      .groupby(["JourDate", "Méthode utilisée"])["Volume urinaire (en mL)"]
+      .sum()
+      .reset_index()
+)
 
-        # 📊 Graphique : bar chart empilé Sonde vs Naturel par Jour
-        chart_data = df.groupby(["Jour", "Méthode utilisée"])["Volume urinaire (en mL)"].sum().reset_index()
+chart = (
+    alt.Chart(chart_data)
+    .mark_bar()
+    .encode(
+        x=alt.X(
+            "JourDate:T",
+            title="Jour",
+            axis=alt.Axis(format="%d/%m"),   # affiche dd/mm
+            sort="ascending"                 # tri chronologique (car type T)
+        ),
+        y=alt.Y("Volume urinaire (en mL):Q", title="Volume total (mL)"),
+        color=alt.Color("Méthode utilisée:N", title="Méthode"),
+        tooltip=[
+            alt.Tooltip("JourDate:T", title="Jour", format="%d/%m/%Y"),
+            "Méthode utilisée:N",
+            alt.Tooltip("Volume urinaire (en mL):Q", title="Volume (mL)")
+        ],
+    )
+    .properties(title="📊 Volume urinaire journalier par méthode", width="container")
+)
 
-        chart = alt.Chart(chart_data).mark_bar().encode(
-            x=alt.X("Jour:O", title="Jour"),
-            y=alt.Y("Volume urinaire (en mL):Q", title="Volume total (mL)"),
-            color=alt.Color("Méthode utilisée:N", title="Méthode"),
-            tooltip=["Jour", "Méthode utilisée", "Volume urinaire (en mL)"]
-        ).properties(
-            title="📊 Volume urinaire journalier par méthode",
-            width="container"
-        )
+st.altair_chart(chart, use_container_width=True)
 
-        st.dataframe(df, use_container_width=True)
-        st.altair_chart(chart, use_container_width=True)
-
-    else:
-        st.info("Aucun enregistrement à afficher ou supprimer.")
 
 
 # 🗑️ Suppression d'une ligne
