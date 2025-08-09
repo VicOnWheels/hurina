@@ -91,38 +91,70 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
     records = sheet.get_all_records()
     df = pd.DataFrame(records)
 
-    if not df.empty:
-        # Regrouper par date "pure" (sans heure) + méthode
-        df["Saisie temps"] = pd.to_datetime(df["Saisie temps"], errors="coerce")
-        df = df.dropna(subset=["Saisie temps"])
+# --- Choix de granularité ---
+weekly = st.toggle("Regrouper par semaine", value=False)
 
-chart_data = (
-    df.assign(JourDate=df["Saisie temps"].dt.normalize())  # datetime à minuit
-      .groupby(["JourDate", "Méthode utilisée"])["Volume urinaire (en mL)"]
-      .sum()
-      .reset_index()
-)
+if weekly:
+    # Semaine ISO démarrant le lundi
+    df2 = df.assign(
+        JourDate=df["Saisie temps"].dt.normalize(),
+        Semaine=df["Saisie temps"].dt.to_period("W-MON").apply(lambda p: p.start_time)  # début de semaine (lundi)
+    )
+    chart_data = (
+        df2.groupby(["Semaine", "Méthode utilisée"], as_index=False)["Volume urinaire (en mL)"]
+           .sum()
+           .sort_values("Semaine")
+    )
 
+    x_field = alt.X(
+        "Semaine:T",
+        title="Semaine (début)",
+        axis=alt.Axis(format="%d/%m"),   # affichage "Semaine du 01/07"
+        sort="ascending"
+    )
+    tooltip = [
+        alt.Tooltip("Semaine:T", title="Semaine du", format="%d/%m/%Y"),
+        alt.Tooltip("Méthode utilisée:N", title="Méthode"),
+        alt.Tooltip("Volume urinaire (en mL):Q", title="Volume (mL)"),
+    ]
+    chart_title = "📊 Volume urinaire hebdomadaire par méthode"
+
+else:
+    # Agrégation journalière
+    df2 = df.assign(JourDate=df["Saisie temps"].dt.normalize())
+    chart_data = (
+        df2.groupby(["JourDate", "Méthode utilisée"], as_index=False)["Volume urinaire (en mL)"]
+           .sum()
+           .sort_values("JourDate")
+    )
+
+    x_field = alt.X(
+        "JourDate:T",
+        title="Jour",
+        axis=alt.Axis(format="%d/%m"),
+        sort="ascending"
+    )
+    tooltip = [
+        alt.Tooltip("JourDate:T", title="Jour", format="%d/%m/%Y"),
+        alt.Tooltip("Méthode utilisée:N", title="Méthode"),
+        alt.Tooltip("Volume urinaire (en mL):Q", title="Volume (mL)"),
+    ]
+    chart_title = "📊 Volume urinaire journalier par méthode"
+
+# --- Graphique ---
 chart = (
     alt.Chart(chart_data)
     .mark_bar()
     .encode(
-        x=alt.X(
-            "JourDate:T",
-            title="Jour",
-            axis=alt.Axis(format="%d/%m"),   # affiche dd/mm
-            sort="ascending"                 # tri chronologique (car type T)
-        ),
+        x=x_field,
         y=alt.Y("Volume urinaire (en mL):Q", title="Volume total (mL)"),
         color=alt.Color("Méthode utilisée:N", title="Méthode"),
-        tooltip=[
-            alt.Tooltip("JourDate:T", title="Jour", format="%d/%m/%Y"),
-            "Méthode utilisée:N",
-            alt.Tooltip("Volume urinaire (en mL):Q", title="Volume (mL)")
-        ],
+        tooltip=tooltip,
     )
-    .properties(title="📊 Volume urinaire journalier par méthode", width="container")
+    .properties(title=chart_title, width="container")
 )
+
+st.altair_chart(chart, use_container_width=True)
 
 st.altair_chart(chart, use_container_width=True)
 
