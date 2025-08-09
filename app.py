@@ -189,7 +189,7 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
 
         chart = (
             alt.Chart(chart_data)
-            .mark_bar()
+            .mark_bar(size=40)
             .encode(
                 x=x_field,
                 y=alt.Y(f"{COL_VOL}:Q", title="Volume total (mL)"),
