@@ -59,7 +59,11 @@ default_time = now_local.time().replace(second=0, microsecond=0)
 default_index = time_options.index(default_time) if default_time in time_options else 0
 
 with col1:
-    date_collected = st.date_input("📅 Date de la collecte", value=now_local.date())
+    date_collected = st.date_input(
+        "📅 Date de la collecte",
+        value=now_local.date(),
+        format="DD/MM/YYYY"   # ← format FR dans le widget
+    )
     time_collected = st.selectbox("🕒 Heure de la collecte", time_options, index=default_index)
     datetime_collected = datetime.combine(date_collected, time_collected)
 
