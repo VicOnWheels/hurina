@@ -43,7 +43,15 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
     df["Date"] = df[COL_TIME].dt.strftime("%d/%m/%Y")
     df["Heure"] = df[COL_TIME].dt.strftime("%H:%M")
 
+    # 👉 Retirer 'Saisie temps' de l'affichage
+    df = df.drop(columns=[COL_TIME], errors="ignore")
+
+    # 👉 Réordonner : Date, Heure d'abord
+    cols = ["Date", "Heure"] + [c for c in df.columns if c not in ["Date", "Heure"]]
+    df = df[cols]
+
     return df
+
 
 def delete_record(sheet) -> None:
     records = sheet.get_all_records()
