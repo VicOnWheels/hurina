@@ -87,17 +87,10 @@ st.markdown("---")
 # ---------- UI ----------
 if st.checkbox("📈 Afficher l'historique des enregistrements"):
     df = load_df_from_sheet(sheet)
-    # affichage tableau historique sans __dt__
-    st.dataframe(
-        df.drop(columns=["__dt__"], errors="ignore"),
-        use_container_width=True,
-        hide_index=True
-    )
-
-
     if df.empty:
         st.info("Aucune donnée exploitable pour l’historique.")
     else:
+        df.drop(columns=["__dt__"], errors="ignore"),
         st.dataframe(df, use_container_width=True)
         weekly = st.toggle("Regrouper par semaine", value=False)
         fig = build_chart(df, weekly)
