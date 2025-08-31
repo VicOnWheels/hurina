@@ -44,7 +44,8 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
     df["Heure"] = df[COL_TIME].dt.strftime("%H:%M")
 
     # 👉 Retirer 'Saisie temps' de l'affichage
-    df = df.drop(columns=[COL_TIME], errors="ignore")
+    df["__dt__"] = df[COL_TIME]          # <= colonne interne pour les charts
+    df = df.drop(columns=[COL_TIME], errors="ignore")  # n’apparaît plus à l’écran
 
     # 👉 Réordonner : Date, Heure d'abord
     cols = ["Date", "Heure"] + [c for c in df.columns if c not in ["Date", "Heure"]]
@@ -84,17 +85,20 @@ def delete_record(sheet) -> None:
 def build_chart(df: pd.DataFrame, weekly: bool):
     """Construit un graphique Plotly interactif avec rangeslider, lisible sur mobile."""
     COL_TIME = "Saisie temps"
+
+
+
     COL_VOL = "Volume (mL)"
     COL_METH = "Méthode utilisée"
 
     if weekly:
-        df2 = df.assign(Semaine=df[COL_TIME].dt.to_period("W-MON").apply(lambda p: p.start_time))
+        df2 = df.assign(Semaine=df['__dt__'].dt.to_period("W-MON").apply(lambda p: p.start_time))
         chart_data = df2.groupby(["Semaine", COL_METH], as_index=False)[COL_VOL].sum()
         x_col = "Semaine"
         title = "📊 Volume hebdomadaire par méthode"
         window_days = 8 * 7  # ~8 semaines visibles par défaut
     else:
-        df2 = df.assign(JourDate=df[COL_TIME].dt.normalize())
+        df2 = df.assign(JourDate=df['__dt__'].dt.normalize())
         chart_data = df2.groupby(["JourDate", COL_METH], as_index=False)[COL_VOL].sum()
         x_col = "JourDate"
         title = "📊 Volume journalier par méthode"
