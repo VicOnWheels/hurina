@@ -64,7 +64,7 @@ with col1:
     datetime_collected = datetime.combine(date_collected, time_collected)
 
 with col2:
-    volume = st.number_input("💦 Volume urinaire (en mL)", min_value=0, step=10)
+    volume = st.number_input("Volume (mL)", min_value=0, step=10)
 
 with col3:
     method = st.selectbox("⚙️ Méthode utilisée", ["Sonde", "Naturel"])

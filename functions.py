@@ -45,7 +45,6 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
 
     return df
 
-
 def delete_record(sheet) -> None:
     records = sheet.get_all_records()
     df = pd.DataFrame(records)
