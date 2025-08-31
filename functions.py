@@ -55,6 +55,8 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
 
 
 def delete_record(sheet) -> None:
+    import pandas as pd
+    import streamlit as st
 
     records = sheet.get_all_records()
     df = pd.DataFrame(records)
@@ -66,6 +68,12 @@ def delete_record(sheet) -> None:
     COL_TIME = "Saisie temps"
     COL_VOL  = "Volume (mL)"
     COL_METH = "Méthode utilisée"
+
+    # Renomme si besoin
+    if COL_VOL not in df.columns and "Volume urinaire (en mL)" in df.columns:
+        df.rename(columns={"Volume urinaire (en mL)": COL_VOL}, inplace=True)
+    if COL_METH not in df.columns and "Méthode" in df.columns:
+        df.rename(columns={"Méthode": COL_METH}, inplace=True)
 
     # Datetime FR/ISO robuste
     s = df[COL_TIME].astype(str).str.strip()
@@ -86,7 +94,7 @@ def delete_record(sheet) -> None:
     # 🔽 Tri: plus récent -> plus ancien
     df = df.sort_values("__dt__", ascending=False)
 
-    # Libellé FR propre (séparateurs •)
+    # Libellé FR propre
     df["__label__"] = (
         df["__dt__"].dt.strftime("%d/%m/%Y %H:%M")
         + " • "
@@ -103,13 +111,9 @@ def delete_record(sheet) -> None:
 
     sel_rownum = int(df.loc[df["__label__"] == selected_label, "__rownum__"].iloc[0])
 
-    confirm = st.checkbox("✅ Je confirme la suppression")
     if st.button("Supprimer cet enregistrement ❌"):
-        if not confirm:
-            st.warning("Coche la confirmation avant de supprimer.")
-        else:
-            sheet.delete_rows(sel_rownum)
-            st.success("✅ Enregistrement supprimé. Recharge la page pour voir la mise à jour.")
+        sheet.delete_rows(sel_rownum)
+        st.success("✅ Enregistrement supprimé. Recharge la page pour voir la mise à jour.")
 
 
 
