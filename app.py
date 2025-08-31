@@ -90,8 +90,7 @@ if st.checkbox("📈 Afficher l'historique des enregistrements"):
     if df.empty:
         st.info("Aucune donnée exploitable pour l’historique.")
     else:
-        df.drop(columns=["__dt__"], errors="ignore"),
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df.drop(columns=["__dt__"], errors="ignore"), use_container_width=True)
         weekly = st.toggle("Regrouper par semaine", value=False)
         fig = build_chart(df, weekly)
         st.plotly_chart(fig, use_container_width=True, config=dict(displayModeBar=False, scrollZoom=True))
