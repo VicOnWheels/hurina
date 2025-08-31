@@ -12,7 +12,7 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
         return df
 
     COL_TIME = "Saisie temps"
-    COL_VOL = "Volume urinaire (en mL)"
+    COL_VOL = "Volume (mL)"
     COL_METH = "Méthode utilisée"
 
     # Vérifs colonnes minimales
@@ -57,7 +57,7 @@ def delete_record(sheet) -> None:
 
     # Création des libellés lisibles
     df["__label"] = df.apply(
-        lambda row: f"{row['Saisie temps']} – {row['Volume urinaire (en mL)']} mL – {row['Méthode utilisée']}",
+        lambda row: f"{row['Saisie temps']} – {row['Volume (mL)']} mL – {row['Méthode utilisée']}",
         axis=1
     )
     selected_label = st.selectbox("Choisissez un enregistrement à supprimer :", df["__label"].tolist())
@@ -76,7 +76,7 @@ def delete_record(sheet) -> None:
 def build_chart(df: pd.DataFrame, weekly: bool):
     """Construit un graphique Plotly interactif avec rangeslider, lisible sur mobile."""
     COL_TIME = "Saisie temps"
-    COL_VOL = "Volume urinaire (en mL)"
+    COL_VOL = "Volume (mL)"
     COL_METH = "Méthode utilisée"
 
     if weekly:
