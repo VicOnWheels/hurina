@@ -34,7 +34,15 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
 
     df[COL_TIME] = dt
     df = df.dropna(subset=[COL_TIME]).copy()
-    df = df.sort_values(COL_TIME)
+    df = df.sort_values(COL_TIME, ascending=False)  # plus récent en haut
+
+    # 👉 Supprimer colonne Horodatage si elle existe
+    df = df.drop(columns=["Horodatage"], errors="ignore")
+
+    # 👉 Ajouter colonnes Date & Heure (FR)
+    df["Date"] = df[COL_TIME].dt.strftime("%d/%m/%Y")
+    df["Heure"] = df[COL_TIME].dt.strftime("%H:%M")
+
     return df
 
 
