@@ -55,31 +55,62 @@ def load_df_from_sheet(_sheet) -> pd.DataFrame:
 
 
 def delete_record(sheet) -> None:
+
     records = sheet.get_all_records()
     df = pd.DataFrame(records)
 
     if df.empty:
-        st.info("Aucun enregistrement à supprimer.")
+        st.info("Aucun enregistrement.")
         return
 
-    st.markdown("### 🗑️ Supprimer un enregistrement")
+    COL_TIME = "Saisie temps"
+    COL_VOL  = "Volume (mL)"
+    COL_METH = "Méthode utilisée"
 
-    # Création des libellés lisibles
-    df["__label"] = df.apply(
-        lambda row: f"{row['Saisie temps']} – {row['Volume (mL)']} mL – {row['Méthode utilisée']}",
-        axis=1
+    # Datetime FR/ISO robuste
+    s = df[COL_TIME].astype(str).str.strip()
+    dt = pd.to_datetime(s, format="%Y-%m-%d %H:%M:%S", errors="coerce")
+    m = dt.isna()
+    if m.any():
+        dt.loc[m] = pd.to_datetime(s[m], format="%d/%m/%Y %H:%M:%S", errors="coerce")
+    m = dt.isna()
+    if m.any():
+        dt.loc[m] = pd.to_datetime(s[m], errors="coerce", dayfirst=True)
+
+    df["__dt__"] = dt
+    df = df.dropna(subset=["__dt__"]).copy()
+
+    # Numéro de ligne réel (get_all_records saute l'entête)
+    df["__rownum__"] = df.index + 2
+
+    # 🔽 Tri: plus récent -> plus ancien
+    df = df.sort_values("__dt__", ascending=False)
+
+    # Libellé FR propre (séparateurs •)
+    df["__label__"] = (
+        df["__dt__"].dt.strftime("%d/%m/%Y %H:%M")
+        + " • "
+        + df[COL_VOL].fillna(0).astype(int).astype(str) + " mL"
+        + " • "
+        + df[COL_METH].astype(str)
     )
-    selected_label = st.selectbox("Choisissez un enregistrement à supprimer :", df["__label"].tolist())
-    selected_index = df.index[df["__label"] == selected_label][0]
 
-    confirm = st.checkbox("✅ Je confirme vouloir supprimer cet enregistrement")
+    st.markdown("### 🗑️ Supprimer un enregistrement")
+    selected_label = st.selectbox(
+        "Choisissez l’enregistrement (les plus récents en premier) :",
+        df["__label__"].tolist()
+    )
 
+    sel_rownum = int(df.loc[df["__label__"] == selected_label, "__rownum__"].iloc[0])
+
+    confirm = st.checkbox("✅ Je confirme la suppression")
     if st.button("Supprimer cet enregistrement ❌"):
         if not confirm:
-            st.warning("❗ Veuillez cocher la case de confirmation avant de supprimer.")
-            return
-        sheet.delete_rows(int(selected_index) + 2)  # +1 pour l'index -> 1-based, +1 pour l'entête
-        st.success("✅ Enregistrement supprimé avec succès. Rechargez la page pour voir les changements.")
+            st.warning("Coche la confirmation avant de supprimer.")
+        else:
+            sheet.delete_rows(sel_rownum)
+            st.success("✅ Enregistrement supprimé. Recharge la page pour voir la mise à jour.")
+
 
 
 def build_chart(df: pd.DataFrame, weekly: bool):
