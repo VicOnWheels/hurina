@@ -138,6 +138,8 @@ st.markdown(
     }
 
     /* ── Méthode : deux pastilles à parts égales ──────────── */
+    /* Cible data-variant / data-selected : attributs stables de Streamlit.
+       Les classes st-emotion-cache-* changent à chaque version, jamais s'y fier. */
     [data-testid="stButtonGroup"] { width: 100% !important; }
     [data-testid="stButtonGroup"] > div {
       display: flex !important;
@@ -145,20 +147,22 @@ st.markdown(
       gap: 0.6rem !important;
     }
     [data-testid="stButtonGroup"] > div > * { flex: 1 1 0 !important; min-width: 0 !important; }
-    [data-testid="stButtonGroup"] button {
+
+    button[data-variant="segmented_control"] {
       flex: 1 1 0 !important;
       width: 100% !important;
       min-width: 0 !important;
       min-height: 64px !important;
       margin: 0 !important;
       padding: 0 0.4rem !important;
+      font-family: var(--font) !important;
       border: 2px solid var(--ligne) !important;
       border-radius: var(--r) !important;
       background: var(--surface) !important;
       overflow: visible !important;
     }
-    [data-testid="stButtonGroup"] button p,
-    [data-testid="stButtonGroup"] button div {
+    button[data-variant="segmented_control"] p,
+    button[data-variant="segmented_control"] div {
       font-size: 1.2rem !important;
       font-weight: 700 !important;
       color: var(--doux) !important;
@@ -166,12 +170,12 @@ st.markdown(
       overflow: visible !important;
       text-overflow: clip !important;
     }
-    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] {
+    button[data-variant="segmented_control"][data-selected="true"] {
       background: var(--accent) !important;
       border-color: var(--accent) !important;
     }
-    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] p,
-    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] div {
+    button[data-variant="segmented_control"][data-selected="true"] p,
+    button[data-variant="segmented_control"][data-selected="true"] div {
       color: #FFFFFF !important;
     }
 
@@ -270,7 +274,7 @@ st.markdown(
         min-width: 58px !important; width: 58px !important; height: 80px !important;
       }
       [data-testid="stNumberInputContainer"] { min-height: 84px; }
-      [data-testid="stButtonGroup"] button p { font-size: 1.1rem !important; }
+      button[data-variant="segmented_control"] p { font-size: 1.1rem !important; }
     }
     </style>
     """,
