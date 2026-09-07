@@ -3,10 +3,17 @@ import pandas as pd
 import plotly.express as px
 import pandas as pd
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=60, show_spinner=False)
+def load_records(_sheet):
+    """Lecture brute du Sheet. Unique point d'accès réseau, mis en cache :
+    tout le reste du module passe par ici au lieu d'appeler get_all_records()."""
+    return _sheet.get_all_records()
+
+
+@st.cache_data(ttl=60, show_spinner=False)
 def load_df_from_sheet(_sheet) -> pd.DataFrame:
     """Charge les données et gère la conversion datetime de 'Saisie temps'."""
-    records = _sheet.get_all_records()
+    records = load_records(_sheet)
     df = pd.DataFrame(records)
     if df.empty:
         return df
@@ -58,7 +65,7 @@ def delete_record(sheet) -> None:
     import pandas as pd
     import streamlit as st
 
-    records = sheet.get_all_records()
+    records = load_records(sheet)
     df = pd.DataFrame(records)
 
     if df.empty:
@@ -113,7 +120,9 @@ def delete_record(sheet) -> None:
 
     if st.button("Supprimer cet enregistrement ❌"):
         sheet.delete_rows(sel_rownum)
-        st.success("✅ Enregistrement supprimé. Recharge la page pour voir la mise à jour.")
+        st.cache_data.clear()
+        st.success("Enregistrement supprimé.")
+        st.rerun()
 
 
 
