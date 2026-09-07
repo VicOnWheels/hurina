@@ -78,12 +78,10 @@ st.markdown(
       padding: 0.2rem 0 !important;
       background: transparent !important;
     }
-    [data-testid="stNumberInput"] input::placeholder {
-      color: var(--ligne) !important;
-      font-size: 3.2rem !important;
-      opacity: 1;
-    }
-    [data-testid="stNumberInput"] > div,
+    /* L'encart « Appuyez sur Entrée » se superposait au champ : on le masque */
+    [data-testid="InputInstructions"],
+    [data-testid="stInputInstructions"] { display: none !important; }
+
     [data-testid="stNumberInputContainer"] {
       border: 2px solid var(--ligne) !important;
       border-radius: var(--r) !important;
@@ -93,8 +91,17 @@ st.markdown(
       overflow: hidden;
     }
 
+    /* Le bouton d'effacement reste petit et discret, pas un pavé saumon */
+    [data-testid="stNumberInputClearButton"] {
+      background: transparent !important;
+      color: var(--doux) !important;
+      min-width: 40px !important; width: 40px !important; height: 40px !important;
+    }
+    [data-testid="stNumberInputClearButton"] svg {
+      height: 20px !important; width: 20px !important; fill: var(--doux) !important;
+    }
+
     /* Boutons + / − : toujours visibles, larges, tapables au doigt */
-    [data-testid="stNumberInput"] button,
     [data-testid="stNumberInputStepUp"],
     [data-testid="stNumberInputStepDown"] {
       display: flex !important;
@@ -110,44 +117,54 @@ st.markdown(
       border: none !important;
       border-radius: 0 !important;
     }
-    [data-testid="stNumberInput"] button:hover,
     [data-testid="stNumberInputStepUp"]:hover,
     [data-testid="stNumberInputStepDown"]:hover {
       background: var(--accent) !important;
       color: #FFFFFF !important;
     }
-    [data-testid="stNumberInput"] button svg,
     [data-testid="stNumberInputStepUp"] svg,
     [data-testid="stNumberInputStepDown"] svg {
       height: 34px !important; width: 34px !important;
       fill: #FFFFFF !important; color: #FFFFFF !important;
     }
 
-    /* ── Méthode : deux pastilles larges, sans rechargement ─ */
-    .st-key-methode [role="radiogroup"] { gap: 0.8rem; }
-    .st-key-methode [role="radiogroup"] label {
-      flex: 1;
-      justify-content: center;
-      min-height: 62px;
-      border: 2px solid var(--ligne);
-      border-radius: var(--r);
-      background: var(--surface);
+    /* ── Méthode : deux pastilles à parts égales ──────────── */
+    [data-testid="stButtonGroup"] { width: 100% !important; }
+    [data-testid="stButtonGroup"] > div {
+      display: flex !important;
+      width: 100% !important;
+      gap: 0.6rem !important;
+    }
+    [data-testid="stButtonGroup"] > div > * { flex: 1 1 0 !important; min-width: 0 !important; }
+    [data-testid="stButtonGroup"] button {
+      flex: 1 1 0 !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 64px !important;
       margin: 0 !important;
-      padding: 0 0.6rem;
+      padding: 0 0.4rem !important;
+      border: 2px solid var(--ligne) !important;
+      border-radius: var(--r) !important;
+      background: var(--surface) !important;
+      overflow: visible !important;
     }
-    .st-key-methode [role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
-      font-size: 1.15rem !important;
-      font-weight: 700;
+    [data-testid="stButtonGroup"] button p,
+    [data-testid="stButtonGroup"] button div {
+      font-size: 1.2rem !important;
+      font-weight: 700 !important;
       color: var(--doux) !important;
+      white-space: nowrap !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
     }
-    .st-key-methode [role="radiogroup"] label:has(input:checked) {
-      background: var(--accent);
-      border-color: var(--accent);
+    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] {
+      background: var(--accent) !important;
+      border-color: var(--accent) !important;
     }
-    .st-key-methode [role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownContainer"] p {
+    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] p,
+    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] div {
       color: #FFFFFF !important;
     }
-    .st-key-methode [role="radiogroup"] label > div:first-child { display: none; }
 
     /* ── Boutons ──────────────────────────────────────────── */
     .stButton > button {
@@ -172,28 +189,37 @@ st.markdown(
 
     /* ── Champs texte / date / heure ──────────────────────── */
     .stApp input, .stApp textarea,
-    div[data-baseweb="input"] input, div[data-baseweb="select"] > div {
+    div[data-baseweb="input"] input, div[data-baseweb="select"] > div,
+    [data-testid="stDateInput"] input, [data-testid="stTimeInput"] input {
       font-family: var(--font) !important;
-      font-size: 1.1rem !important;
+      font-size: 1.25rem !important;
+      font-weight: 700 !important;
       color: var(--encre) !important;
     }
     div[data-baseweb="input"], div[data-baseweb="select"] > div, .stTextArea textarea {
       border: 2px solid var(--ligne) !important;
       border-radius: var(--r) !important;
-      min-height: 52px;
+      min-height: 60px;
       background: var(--surface) !important;
     }
-    .stTextArea textarea { min-height: 110px; line-height: 1.6; }
+    .stTextArea textarea { font-weight: 400 !important; min-height: 110px; line-height: 1.6; }
 
     /* ── Menus déroulants ouverts (rendus hors de .stApp) ─── */
     div[data-baseweb="popover"] *, ul[data-baseweb="menu"] * { font-family: var(--font) !important; }
-    ul[data-baseweb="menu"] li, div[data-baseweb="popover"] [role="option"] {
-      font-size: 1.1rem !important; padding: 13px 18px !important; min-height: 50px;
+    ul[data-baseweb="menu"] li, div[data-baseweb="popover"] [role="option"],
+    div[data-baseweb="popover"] li {
+      font-size: 1.25rem !important;
+      font-weight: 700 !important;
+      padding: 16px 20px !important;
+      min-height: 60px !important;
+      display: flex !important;
+      align-items: center !important;
     }
     ul[data-baseweb="menu"] li:hover, ul[data-baseweb="menu"] li[aria-selected="true"] {
       background: var(--fond) !important; color: var(--encre) !important;
     }
     div[data-baseweb="calendar"] * { font-family: var(--font) !important; }
+    div[data-baseweb="calendar"] [role="gridcell"] { font-size: 1.1rem !important; }
 
     /* ── Résumé du jour ───────────────────────────────────── */
     .resume {
@@ -217,6 +243,18 @@ st.markdown(
       outline: 3px solid var(--accent) !important; outline-offset: 2px !important;
     }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+    /* ── Petits écrans ────────────────────────────────────── */
+    @media (max-width: 420px) {
+      .block-container { padding: 1.2rem 0.7rem 3rem; }
+      [data-testid="stNumberInput"] input { font-size: 2.8rem !important; }
+      [data-testid="stNumberInputStepUp"],
+      [data-testid="stNumberInputStepDown"] {
+        min-width: 58px !important; width: 58px !important; height: 80px !important;
+      }
+      [data-testid="stNumberInputContainer"] { min-height: 84px; }
+      [data-testid="stButtonGroup"] button p { font-size: 1.1rem !important; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -259,36 +297,32 @@ with st.container(border=True):
     datetime_collected = datetime.combine(date_collected, time_collected)
 
     st.markdown(
-        "<p style='font-weight:700;color:#7C5A54;margin-bottom:0.2rem'>Volume recueilli</p>",
+        "<p style='font-weight:700;color:#7C5A54;margin-bottom:0.2rem'>Volume recueilli (mL)</p>",
         unsafe_allow_html=True,
     )
+    # value=0 : les boutons +/- sont utilisables dès le départ, sans saisie préalable
     volume = st.number_input(
         "Volume en millilitres",
         min_value=0,
         max_value=3000,
         step=50,
-        value=None,
-        placeholder="0",
+        value=0,
         key="volume",
         label_visibility="collapsed",
-    )
-    st.markdown(
-        "<p style='text-align:center;color:#7C5A54;margin:-0.4rem 0 0.6rem'>millilitres</p>",
-        unsafe_allow_html=True,
     )
 
     st.markdown(
         "<p style='font-weight:700;color:#7C5A54;margin:1.2rem 0 0.2rem'>Méthode</p>",
         unsafe_allow_html=True,
     )
-    with st.container(key="methode"):
-        methode = st.radio(
-            "Méthode",
-            ["Sonde", "Naturel"],
-            horizontal=True,
-            key="methode_choix",
-            label_visibility="collapsed",
-        )
+    methode = st.segmented_control(
+        "Méthode",
+        ["Sonde", "Naturel"],
+        default="Sonde",
+        key="methode_choix",
+        label_visibility="collapsed",
+        width="stretch",
+    )
 
     with st.expander("Ajouter une note"):
         comment = st.text_area("Note", "", label_visibility="collapsed",
@@ -298,6 +332,8 @@ with st.container(border=True):
         if st.button("Enregistrer", type="primary", width="stretch"):
             if not volume:
                 st.warning("Saisis un volume avant d'enregistrer.")
+            elif not methode:
+                st.warning("Choisis une méthode avant d'enregistrer.")
             else:
                 sheet.append_row([
                     datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S"),
