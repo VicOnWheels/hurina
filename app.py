@@ -15,13 +15,22 @@ TZ = ZoneInfo("Europe/Paris")
 
 # ─────────────────────────────────────────────────────────────
 # Connexion à Google Sheet
+# Mise en cache : sans ça, chaque clic sur un widget rejouait la
+# signature de la clé, l'échange de jeton OAuth et la recherche du
+# classeur — soit 4 aller-retours réseau pour un simple surlignage.
 # ─────────────────────────────────────────────────────────────
-scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-creds_dict["private_key"] = base64.b64decode(creds_dict["private_key"]).decode()
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-client = gspread.authorize(creds)
-sheet = client.open("hurina_db").sheet1
+@st.cache_resource(ttl=3600, show_spinner=False)
+def get_sheet():
+    scope = ["https://www.googleapis.com/auth/spreadsheets",
+             "https://www.googleapis.com/auth/drive"]
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    creds_dict["private_key"] = base64.b64decode(creds_dict["private_key"]).decode()
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    client = gspread.authorize(creds)
+    return client.open("hurina_db").sheet1
+
+
+sheet = get_sheet()
 
 # ─────────────────────────────────────────────────────────────
 # Style
@@ -223,12 +232,20 @@ st.markdown(
 
     /* ── Résumé du jour ───────────────────────────────────── */
     .resume {
-      display: flex; gap: 2.2rem; align-items: baseline;
-      padding: 1.1rem 1.3rem; margin: 1.4rem 0 0.6rem;
+      display: flex; gap: 0.8rem;
+      padding: 1.1rem 1rem; margin: 1.4rem 0 0.6rem;
       background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r);
     }
-    .resume b { font-size: 1.6rem; color: var(--encre); font-variant-numeric: tabular-nums; }
-    .resume span { font-size: 0.9rem; color: var(--doux); display: block; font-weight: 700; }
+    .resume > div { flex: 1 1 0; min-width: 0; }
+    .resume b { font-size: 1.45rem; color: var(--encre); font-variant-numeric: tabular-nums;
+                white-space: nowrap; }
+    .resume span { font-size: 0.85rem; color: var(--doux); display: block; font-weight: 700;
+                   margin-bottom: 0.15rem; }
+    @media (max-width: 420px) {
+      .resume { gap: 0.5rem; padding: 0.9rem 0.7rem; }
+      .resume b { font-size: 1.2rem; }
+      .resume span { font-size: 0.78rem; }
+    }
 
     /* ── Divers ───────────────────────────────────────────── */
     [data-testid="stExpander"] details {
@@ -325,8 +342,7 @@ with st.container(border=True):
     )
 
     with st.expander("Ajouter une note"):
-        comment = st.text_area("Note", "", label_visibility="collapsed",
-                               placeholder="Douleur, boisson, contexte…")
+        comment = st.text_area("Note", "", label_visibility="collapsed")
 
     with st.container(key="save"):
         if st.button("Enregistrer", type="primary", width="stretch"):
@@ -353,26 +369,32 @@ with st.container(border=True):
 # ─────────────────────────────────────────────────────────────
 @st.cache_data(ttl=60, show_spinner=False)
 def resume_du_jour(_sheet, jour):
-    """Total et nombre de collectes du jour. None si le format ne s'y prête pas."""
+    """Volumes du jour par méthode et nombre de collectes. None si illisible."""
     try:
         df = load_df_from_sheet(_sheet)
         if df.empty or "__dt__" not in df.columns:
             return None
         col_vol = next(c for c in df.columns if "volume" in str(c).lower())
+        col_meth = next(c for c in df.columns if "thode" in str(c).lower())
         j = df[pd.to_datetime(df["__dt__"]).dt.date == jour]
         if j.empty:
-            return 0, 0
-        return int(pd.to_numeric(j[col_vol], errors="coerce").sum()), len(j)
+            return 0, 0, 0
+        vols = pd.to_numeric(j[col_vol], errors="coerce").fillna(0)
+        meth = j[col_meth].astype(str).str.strip().str.lower()
+        sonde = int(vols[meth.str.startswith("sonde")].sum())
+        naturel = int(vols[meth.str.startswith("naturel")].sum())
+        return sonde, naturel, len(j)
     except Exception:
         return None
 
 
 r = resume_du_jour(sheet, now_local.date())
 if r is not None:
-    total, n = r
+    sonde, naturel, n = r
     st.markdown(
         f"""<div class="resume">
-        <div><span>Aujourd'hui</span><b>{total:,} mL</b></div>
+        <div><span>Sonde</span><b>{sonde:,} mL</b></div>
+        <div><span>Naturel</span><b>{naturel:,} mL</b></div>
         <div><span>Collectes</span><b>{n}</b></div>
         </div>""".replace(",", " "),
         unsafe_allow_html=True,
