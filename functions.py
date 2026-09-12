@@ -126,53 +126,59 @@ def delete_record(sheet) -> None:
 
 
 
-def build_chart(df: pd.DataFrame, weekly: bool):
-    """Construit un graphique Plotly interactif avec rangeslider, lisible sur mobile."""
-    COL_TIME = "Saisie temps"
+# Fenêtres de temps proposées. Remplace le rangeslider : la période devient
+# un choix explicite et tapable au lieu de deux poignées à faire glisser.
+PERIODES = {"7 j": 7, "30 j": 30, "3 mois": 92, "Tout": None}
 
 
-
+def build_chart(df: pd.DataFrame, weekly: bool, days: int | None = 30):
+    """Graphique Plotly. `days` borne la fenêtre affichée ; None = tout l'historique."""
     COL_VOL = "Volume (mL)"
     COL_METH = "Méthode utilisée"
 
-    if weekly:
-        df2 = df.assign(Semaine=df['__dt__'].dt.to_period("W-MON").apply(lambda p: p.start_time))
-        chart_data = df2.groupby(["Semaine", COL_METH], as_index=False)[COL_VOL].sum()
-        x_col = "Semaine"
-        title = "📊 Volume hebdomadaire par méthode"
-        window_days = 8 * 7  # ~8 semaines visibles par défaut
-    else:
-        df2 = df.assign(JourDate=df['__dt__'].dt.normalize())
-        chart_data = df2.groupby(["JourDate", COL_METH], as_index=False)[COL_VOL].sum()
-        x_col = "JourDate"
-        title = "📊 Volume journalier par méthode"
-        window_days = 15  # ~15 jours visibles par défaut
+    # --- Fenêtre de temps, appliquée aux données et non à l'axe ---
+    d = df
+    if days is not None:
+        fin = df["__dt__"].max().normalize()
+        d = df[df["__dt__"] >= fin - pd.Timedelta(days=days - 1)]
+        if d.empty:          # fenêtre vide : on retombe sur l'historique complet
+            d = df
+            days = None
 
-    # --- Graphique Plotly ---
+    # Au-delà de ~60 jours, le journalier devient un mur de barres illisible
+    jours_distincts = d["__dt__"].dt.normalize().nunique()
+    if not weekly and jours_distincts > 60:
+        weekly = True
+
+    if weekly:
+        d2 = d.assign(Semaine=d["__dt__"].dt.to_period("W-MON").apply(lambda p: p.start_time))
+        chart_data = d2.groupby(["Semaine", COL_METH], as_index=False)[COL_VOL].sum()
+        x_col = "Semaine"
+        title = "Volume hebdomadaire par méthode"
+    else:
+        d2 = d.assign(JourDate=d["__dt__"].dt.normalize())
+        chart_data = d2.groupby(["JourDate", COL_METH], as_index=False)[COL_VOL].sum()
+        x_col = "JourDate"
+        title = "Volume journalier par méthode"
+
     fig = px.bar(
         chart_data,
         x=x_col, y=COL_VOL, color=COL_METH,
-        barmode="stack", title=title
+        barmode="stack", title=title,
     )
 
-    # Rangeslider + fenêtre initiale
-    end = pd.to_datetime(chart_data[x_col]).max()
-    start = end - pd.Timedelta(days=window_days)
-    fig.update_xaxes(
-        type="date",
-        range=[start, end],
-        rangeslider=dict(visible=True),
-        tickformat="%d/%m"
-    )
-
-    # Lisibilité mobile
+    # Plus de rangeslider, et plus de pan/zoom au doigt : la période se choisit
+    # au-dessus du graphique, le graphique lui-même n'a plus rien à manipuler.
+    fig.update_xaxes(type="date", tickformat="%d/%m", rangeslider=dict(visible=False))
     fig.update_layout(
-        height=520,
+        dragmode=False,
+        height=460,
         margin=dict(l=10, r=10, t=60, b=10),
         yaxis_title="Volume total (mL)",
         legend_title="Méthode",
         font=dict(size=18),
         bargap=0.15,
+        paper_bgcolor="rgba(0,0,0,0)",
     )
 
     return fig
