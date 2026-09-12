@@ -183,8 +183,10 @@ st.markdown(
     .st-key-periode button[data-variant="segmented_control"] { min-height: 52px !important; }
     .st-key-periode button[data-variant="segmented_control"] p,
     .st-key-periode button[data-variant="segmented_control"] div {
-      font-size: 1rem !important;
+      font-size: 0.95rem !important;
     }
+    .st-key-periode [data-testid="stButtonGroup"] > div { gap: 0.35rem !important; }
+    .st-key-periode button[data-variant="segmented_control"] { padding: 0 0.2rem !important; }
 
     /* ── Boutons ──────────────────────────────────────────── */
     .stButton > button {
@@ -427,12 +429,36 @@ with st.expander("Historique"):
             label_visibility="collapsed",
             width="stretch",
         )
+        choix = PERIODES[periode or "30 j"]
+        debut = fin = None
+        jours = None
+
+        if choix == "custom":
+            # Bornes par défaut : le dernier mois de données disponibles
+            dmin = df["__dt__"].min().date()
+            dmax = df["__dt__"].max().date()
+            defaut_debut = max(dmin, dmax - timedelta(days=29))
+            c1, c2 = st.columns(2)
+            debut = c1.date_input("Du", value=defaut_debut, min_value=dmin,
+                                  max_value=dmax, format="DD/MM/YYYY", key="periode_du")
+            fin = c2.date_input("Au", value=dmax, min_value=dmin,
+                                max_value=dmax, format="DD/MM/YYYY", key="periode_au")
+            if debut > fin:
+                debut, fin = fin, debut
+                st.caption("Dates inversées, je les ai remises dans l'ordre.")
+        else:
+            jours = choix
+
         weekly = st.toggle("Regrouper par semaine", value=False)
-        st.plotly_chart(
-            build_chart(df, weekly, PERIODES[periode or "30 j"]),
-            width="stretch",
-            config=dict(displayModeBar=False, scrollZoom=False, staticPlot=False),
-        )
+        fig = build_chart(df, weekly, jours, start=debut, end=fin)
+        if fig is None:
+            st.info("Aucune collecte sur cette période.")
+        else:
+            st.plotly_chart(
+                fig,
+                width="stretch",
+                config=dict(displayModeBar=False, scrollZoom=False, staticPlot=False),
+            )
         st.dataframe(df.drop(columns=["__dt__"], errors="ignore"), width="stretch")
 
 with st.expander("Supprimer un enregistrement"):
