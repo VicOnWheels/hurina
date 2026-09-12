@@ -128,22 +128,37 @@ def delete_record(sheet) -> None:
 
 # Fenêtres de temps proposées. Remplace le rangeslider : la période devient
 # un choix explicite et tapable au lieu de deux poignées à faire glisser.
-PERIODES = {"7 j": 7, "30 j": 30, "3 mois": 92, "Tout": None}
+PERIODES = {"7 j": 7, "30 j": 30, "3 mois": 92, "Tout": None, "Dates": "custom"}
 
 
-def build_chart(df: pd.DataFrame, weekly: bool, days: int | None = 30):
-    """Graphique Plotly. `days` borne la fenêtre affichée ; None = tout l'historique."""
+def build_chart(df: pd.DataFrame, weekly: bool, days: int | None = 30,
+                start=None, end=None):
+    """Graphique Plotly.
+
+    Fenêtre affichée, par ordre de priorité :
+      - `start` / `end` fournis : bornes explicites (inclusives) ;
+      - sinon `days` : N derniers jours depuis la dernière collecte ;
+      - `days=None` : tout l'historique.
+    """
     COL_VOL = "Volume (mL)"
     COL_METH = "Méthode utilisée"
 
     # --- Fenêtre de temps, appliquée aux données et non à l'axe ---
     d = df
-    if days is not None:
+    if start is not None or end is not None:
+        if start is not None:
+            d = d[d["__dt__"] >= pd.Timestamp(start).normalize()]
+        if end is not None:
+            # borne incluse : on prend la fin de la journée choisie
+            d = d[d["__dt__"] < pd.Timestamp(end).normalize() + pd.Timedelta(days=1)]
+    elif days is not None:
         fin = df["__dt__"].max().normalize()
-        d = df[df["__dt__"] >= fin - pd.Timedelta(days=days - 1)]
+        d = d[d["__dt__"] >= fin - pd.Timedelta(days=days - 1)]
         if d.empty:          # fenêtre vide : on retombe sur l'historique complet
             d = df
-            days = None
+
+    if d.empty:
+        return None          # l'appelant affiche un message plutôt qu'un graphe vide
 
     # Au-delà de ~60 jours, le journalier devient un mur de barres illisible
     jours_distincts = d["__dt__"].dt.normalize().nunique()
