@@ -7,7 +7,7 @@ import json
 import base64
 import pandas as pd
 
-from functions import load_df_from_sheet, delete_record, build_chart
+from functions import load_df_from_sheet, delete_record, build_chart, PERIODES
 
 st.set_page_config(page_title="Hurina", page_icon="💧", layout="centered")
 
@@ -138,6 +138,8 @@ st.markdown(
     }
 
     /* ── Méthode : deux pastilles à parts égales ──────────── */
+    /* Cible data-variant / data-selected : attributs stables de Streamlit.
+       Les classes st-emotion-cache-* changent à chaque version, jamais s'y fier. */
     [data-testid="stButtonGroup"] { width: 100% !important; }
     [data-testid="stButtonGroup"] > div {
       display: flex !important;
@@ -145,20 +147,22 @@ st.markdown(
       gap: 0.6rem !important;
     }
     [data-testid="stButtonGroup"] > div > * { flex: 1 1 0 !important; min-width: 0 !important; }
-    [data-testid="stButtonGroup"] button {
+
+    button[data-variant="segmented_control"] {
       flex: 1 1 0 !important;
       width: 100% !important;
       min-width: 0 !important;
       min-height: 64px !important;
       margin: 0 !important;
       padding: 0 0.4rem !important;
+      font-family: var(--font) !important;
       border: 2px solid var(--ligne) !important;
       border-radius: var(--r) !important;
       background: var(--surface) !important;
       overflow: visible !important;
     }
-    [data-testid="stButtonGroup"] button p,
-    [data-testid="stButtonGroup"] button div {
+    button[data-variant="segmented_control"] p,
+    button[data-variant="segmented_control"] div {
       font-size: 1.2rem !important;
       font-weight: 700 !important;
       color: var(--doux) !important;
@@ -166,13 +170,20 @@ st.markdown(
       overflow: visible !important;
       text-overflow: clip !important;
     }
-    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] {
+    button[data-variant="segmented_control"][data-selected="true"] {
       background: var(--accent) !important;
       border-color: var(--accent) !important;
     }
-    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] p,
-    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] div {
+    button[data-variant="segmented_control"][data-selected="true"] p,
+    button[data-variant="segmented_control"][data-selected="true"] div {
       color: #FFFFFF !important;
+    }
+
+    /* Sélecteur de période : 4 options, donc texte plus compact */
+    .st-key-periode button[data-variant="segmented_control"] { min-height: 52px !important; }
+    .st-key-periode button[data-variant="segmented_control"] p,
+    .st-key-periode button[data-variant="segmented_control"] div {
+      font-size: 1rem !important;
     }
 
     /* ── Boutons ──────────────────────────────────────────── */
@@ -270,7 +281,7 @@ st.markdown(
         min-width: 58px !important; width: 58px !important; height: 80px !important;
       }
       [data-testid="stNumberInputContainer"] { min-height: 84px; }
-      [data-testid="stButtonGroup"] button p { font-size: 1.1rem !important; }
+      button[data-variant="segmented_control"] p { font-size: 1.1rem !important; }
     }
     </style>
     """,
@@ -369,7 +380,7 @@ with st.container(border=True):
 # ─────────────────────────────────────────────────────────────
 @st.cache_data(ttl=60, show_spinner=False)
 def resume_du_jour(_sheet, jour):
-    """Volumes du jour par méthode et nombre de sondages. None si illisible."""
+    """Volumes du jour par méthode et nombre de collectes. None si illisible."""
     try:
         df = load_df_from_sheet(_sheet)
         if df.empty or "__dt__" not in df.columns:
@@ -381,22 +392,21 @@ def resume_du_jour(_sheet, jour):
             return 0, 0, 0
         vols = pd.to_numeric(j[col_vol], errors="coerce").fillna(0)
         meth = j[col_meth].astype(str).str.strip().str.lower()
-        est_sonde = meth.str.startswith("sonde")
-        sonde = int(vols[est_sonde].sum())
+        sonde = int(vols[meth.str.startswith("sonde")].sum())
         naturel = int(vols[meth.str.startswith("naturel")].sum())
-        return sonde, naturel, int(est_sonde.sum())
+        return sonde, naturel, len(j)
     except Exception:
         return None
 
 
 r = resume_du_jour(sheet, now_local.date())
 if r is not None:
-    sonde, naturel, nb_sondages = r
+    sonde, naturel, n = r
     st.markdown(
         f"""<div class="resume">
         <div><span>Sonde</span><b>{sonde:,} mL</b></div>
         <div><span>Naturel</span><b>{naturel:,} mL</b></div>
-        <div><span>Sondages</span><b>{nb_sondages}</b></div>
+        <div><span>Collectes</span><b>{n}</b></div>
         </div>""".replace(",", " "),
         unsafe_allow_html=True,
     )
@@ -409,9 +419,20 @@ with st.expander("Historique"):
     if df.empty:
         st.info("Rien à afficher pour l'instant. Enregistre une première collecte.")
     else:
+        periode = st.segmented_control(
+            "Période affichée",
+            list(PERIODES.keys()),
+            default="30 j",
+            key="periode",
+            label_visibility="collapsed",
+            width="stretch",
+        )
         weekly = st.toggle("Regrouper par semaine", value=False)
-        st.plotly_chart(build_chart(df, weekly), width="stretch",
-                        config=dict(displayModeBar=False, scrollZoom=True))
+        st.plotly_chart(
+            build_chart(df, weekly, PERIODES[periode or "30 j"]),
+            width="stretch",
+            config=dict(displayModeBar=False, scrollZoom=False, staticPlot=False),
+        )
         st.dataframe(df.drop(columns=["__dt__"], errors="ignore"), width="stretch")
 
 with st.expander("Supprimer un enregistrement"):
